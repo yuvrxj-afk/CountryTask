@@ -1,0 +1,23 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Poppins";
+}
+
+.form-container {
+  background: linear-gradient(to right, #c1c4c9, #88cdfa);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.form-content {
+  display: flex;
+  border-radius: 3px;
+  width: 300px;
+  background-color: rgba(255, 247, 247, 0);
+  flex-direction: column;
+  gap: 1rem;
+}
