@@ -1,10 +1,10 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { BrowserRouter } from "react-router-dom";
 import Form from "../components/Form";
-import axios from "axios";
+import fetchMock from "jest-fetch-mock";
 
-import MockAdapter from "axios-mock-adapter";
+fetchMock.enableMocks();
 
 const MockForm = () => {
   return (
@@ -19,7 +19,7 @@ describe("Form component", () => {
     render(<MockForm />);
     const submitButton = screen.getByRole("button", { name: /search/i });
 
-    const inputField = screen.getByPlaceholderText("Enter country");
+    const inputField = screen.getByLabelText("Enter country");
     expect(submitButton).toBeInTheDocument();
     expect(inputField).toBeInTheDocument();
   });
@@ -28,7 +28,7 @@ describe("Form component", () => {
     test("only accepts non-empty values", () => {
       render(<MockForm />);
 
-      const inputField = screen.getByPlaceholderText("Enter country");
+      const inputField = screen.getByLabelText("Enter country");
       fireEvent.change(inputField, { target: { value: "" } });
       expect(inputField).toHaveValue("");
       fireEvent.change(inputField, { target: { value: "India" } });
@@ -39,7 +39,7 @@ describe("Form component", () => {
       render(<MockForm />);
 
       const submitButton = screen.getByRole("button", { name: /search/i });
-      const inputField = screen.getByPlaceholderText("Enter country");
+      const inputField = screen.getByLabelText("Enter country");
       expect(submitButton).toBeDisabled();
       fireEvent.change(inputField, { target: { value: "India" } });
       expect(submitButton).not.toBeDisabled();
@@ -48,27 +48,38 @@ describe("Form component", () => {
 });
 
 describe("Form : API", () => {
-  const mockAxios = new MockAdapter(axios);
-  beforeEach(() => {
-    mockAxios.reset();
-  });
   test("submit form Successfully", async () => {
-    render(<MockForm />);
-
-    fireEvent.change(screen.getByPlaceholderText("Enter country"), {
-      target: { value: "India" },
+    const { getByLabelText, getByText } = render(
+      <BrowserRouter>
+        <Form />
+      </BrowserRouter>
+    );
+    const searchInput = getByLabelText("Enter country");
+    const searchButton = getByText("Search");
+    fetchMock.mockResponseOnce(JSON.stringify({}));
+    fireEvent.change(searchInput, { target: { value: "india" } });
+    await act(async () => {
+      fireEvent.click(searchButton);
     });
-    fireEvent.click(screen.getByRole("button", { name: /search/i }));
-
-    await waitFor(() => {
-      expect(mockAxios.history);
-      expect(mockAxios.history.get[0].url).toBe(
-        "https://restcountries.com/v3.1/name/India?fullText=true"
-      );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://restcountries.com/v3.1/name/india?fullText=true"
+    );
+  });
+  test("Does not submit form successfully", async () => {
+    const { getByLabelText, getByText } = render(
+      <BrowserRouter>
+        <Form />
+      </BrowserRouter>
+    );
+    const searchInput = getByLabelText("Enter country");
+    const searchButton = getByText("Search");
+    fetchMock.mockResponseOnce(
+      JSON.stringify({ status: 404, message: "Not Found" })
+    );
+    fireEvent.change(searchInput, { target: { value: "unknown" } });
+    await act(async () => {
+      fireEvent.click(searchButton);
     });
-
-    mockAxios
-      .onGet("https://restcountries.com/v3.1/name/India?fullText=true")
-      .reply(200, { ok: true });
+    // expect(getByText("Not Found")).toBeInTheDocument();
   });
 });

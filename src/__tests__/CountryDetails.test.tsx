@@ -21,17 +21,6 @@ describe("CountryDetails component", () => {
     },
   };
 
-  //   const fakeWeatherData = {
-  //     temp_c: 25,
-  //     condition: {
-  //       text: "Clear",
-  //       icon: "fake-icon",
-  //     },
-  //     wind_dir: "NW",
-  //     wind_kph: 10,
-  //     wind_mph: 6,
-  //   };
-
   beforeEach(() => {
     mockAxios.reset();
   });
@@ -79,5 +68,40 @@ describe("CountryDetails component", () => {
     );
     fireEvent.click(screen.getByText(/Find Capital Weather/i));
     expect(screen.queryByText(/Find Capital Weather/i)).not.toBeInTheDocument();
+  });
+
+  it("fetches weather data and updates state", async () => {
+    // Mock the axios request
+    const mockedData = {
+      current: {
+        temp_c: 25,
+        condition: { text: "Sunny", icon: "sun" },
+        wind_dir: "N",
+        wind_kph: 10,
+        wind_mph: 6,
+      },
+    };
+
+    mockAxios.onGet(/api\.weatherapi\.com/).reply(200, mockedData);
+
+    // Render your component
+    const { getByTestId } = render(
+      <MemoryRouter
+        initialEntries={[{ pathname: "/country", state: [fakeCountryData] }]}
+      >
+        <CountryDetails />
+      </MemoryRouter>
+    );
+    // Assuming your component fetches weather data on some event (e.g., button click)
+    // Simulate the event that triggers the API call
+    fireEvent.click(getByTestId("button-that-triggers-weather"));
+
+    // Wait for the asynchronous function to complete
+    await waitFor(() => {
+      // Check if the state has been updated with the weather data
+      expect(getByTestId("temperature")).toHaveTextContent("25 °C");
+      expect(getByTestId("condition")).toHaveTextContent("Sunny");
+      // Add similar expectations for other weather details
+    });
   });
 });

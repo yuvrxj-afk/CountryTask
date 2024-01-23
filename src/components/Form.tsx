@@ -1,63 +1,82 @@
 import { Button, TextField } from "@mui/material";
-import axios from "axios";
-import { FC, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import toast, { Toaster } from "react-hot-toast";
+import { Component } from "react";
+import { Toaster } from "react-hot-toast";
+import withRouter from "./withRouter";
 
-const Form: FC = () => {
-  const [countryInput, setCountryInput] = useState<string>("");
+interface FormState {
+  countryInput: string;
+}
 
-  const navigate = useNavigate();
+interface FormProps {
+  navigate: (url: string, any: any) => void;
+}
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+class Form extends Component<FormProps, FormState> {
+  constructor(props: any) {
+    super(props);
+    this.state = {
+      countryInput: "",
+    };
+  }
+
+  handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    this.setState({
+      countryInput: e.target.value,
+    });
+  };
+
+  handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const response = await axios.get(
-        `https://restcountries.com/v3.1/name/${countryInput}?fullText=true`
+      const response = await fetch(
+        `https://restcountries.com/v3.1/name/${this.state.countryInput}?fullText=true`
       );
-      const data = response.data;
-      navigate(`/details/${countryInput}`, { state: data });
+      const data = await response.json();
+      this.props.navigate(`/details/${this.state.countryInput}`, {
+        state: data,
+      });
     } catch (error) {
-      toast.error("Not Found , Try Again.");
+      console.log(error);
+      // toast.error(``);
     } finally {
-      setCountryInput("");
+      this.setState({
+        countryInput: "",
+      });
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCountryInput(e.target.value);
-  };
+  render() {
+    const { countryInput } = this.state;
+    return (
+      <>
+        <div>
+          <Toaster />
+        </div>
+        <div className="form-container">
+          <h2>Search Any Country !</h2>
+          <form className="form-content" onSubmit={this.handleSubmit}>
+            <TextField
+              label="Enter country"
+              value={countryInput}
+              onChange={this.handleInputChange}
+              inputProps={{ pattern: "[a-z]{1,15}", style: { color: "black" } }}
+              sx={{
+                borderRadius: "6px",
+              }}
+            />
+            <Button
+              type="submit"
+              variant="contained"
+              color="secondary"
+              disabled={!countryInput}
+            >
+              Search
+            </Button>
+          </form>
+        </div>
+      </>
+    );
+  }
+}
 
-  return (
-    <>
-      <div>
-        <Toaster />
-      </div>
-      <div className="form-container">
-        <h2>Search Any Country !</h2>
-        <form className="form-content" onSubmit={handleSubmit}>
-          <TextField
-            placeholder="Enter country"
-            value={countryInput}
-            onChange={handleInputChange}
-            sx={{
-              color: "white",
-              backgroundColor: "#000",
-              borderRadius: "6px",
-            }}
-          />
-          <Button
-            type="submit"
-            variant="contained"
-            color="secondary"
-            disabled={!countryInput}
-          >
-            Search
-          </Button>
-        </form>
-      </div>
-    </>
-  );
-};
-
-export default Form;
+export default withRouter(Form);
